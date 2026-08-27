@@ -10,6 +10,13 @@ def test_health():
     assert response.json() == {"status": "ok"}
 
 
+def test_korean_dashboard():
+    with TestClient(app) as client:
+        response = client.get("/")
+    assert response.status_code == 200
+    assert "찾는 샘플, 10초 안에" in response.text
+
+
 def test_seeded_items_and_search():
     with TestClient(app) as client:
         items = client.get("/api/v1/items?limit=5")
@@ -25,5 +32,3 @@ def test_validation_rejects_short_query():
     with TestClient(app) as client:
         response = client.post("/api/v1/search", json={"query": "a"})
     assert response.status_code == 422
-
-

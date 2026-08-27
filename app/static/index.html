@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>샘플 찾기 | 의류 벤더 업무 도우미</title>
+  <style>
+    :root{--ink:#17211b;--muted:#647067;--green:#174f38;--lime:#d9f45b;--paper:#f6f5ef;--line:#d9ddd6;--white:#fff}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Noto Sans KR",sans-serif}
+    header{background:var(--green);color:white;padding:42px max(5vw,24px) 72px}header small{color:var(--lime);font-weight:700;letter-spacing:.08em}
+    h1{font-size:clamp(30px,5vw,52px);margin:12px 0 10px;line-height:1.12}header p{margin:0;max-width:730px;color:#dbe8df;line-height:1.7}
+    main{max-width:1180px;margin:-38px auto 60px;padding:0 22px}.panel{background:white;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 30px #173c2920}
+    .search{display:grid;grid-template-columns:1fr auto;gap:10px}.search input,select{border:1px solid var(--line);border-radius:10px;padding:13px 14px;font-size:16px;background:white}
+    button{border:0;border-radius:10px;background:var(--lime);color:#18301f;padding:13px 22px;font-weight:800;font-size:16px;cursor:pointer}
+    .hint{color:var(--muted);font-size:13px;margin:10px 2px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}
+    .stat{background:#eef2ec;border-radius:13px;padding:17px}.stat b{display:block;font-size:27px;color:var(--green)}.stat span{font-size:13px;color:var(--muted)}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:28px 0 12px}.toolbar h2{margin:0 auto 0 0;font-size:20px}.toolbar select{padding:9px 12px}
+    .cards{display:grid;gap:11px}.card{background:white;border:1px solid var(--line);border-radius:14px;padding:17px;display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:18px;align-items:center}
+    .brand{font-weight:800;color:var(--green)}.title{font-size:18px;font-weight:700;margin-top:5px}.label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}.status{background:#e9f1eb;border-radius:999px;padding:7px 11px;font-weight:700;white-space:nowrap}.due{color:#9b3f2a;font-weight:700}
+    .empty{text-align:center;padding:45px;color:var(--muted)}footer{text-align:center;color:var(--muted);font-size:13px}footer a{color:var(--green)}
+    @media(max-width:760px){.card{grid-template-columns:1fr 1fr}.search{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.card .status{justify-self:start}}
+  </style>
+</head>
+<body>
+  <header><small>APPAREL VENDOR WORKSPACE</small><h1>찾는 샘플, 10초 안에.</h1><p>메신저와 엑셀을 뒤지는 대신 브랜드, 품목, 색상, 소재, 진행 상태를 한 번에 검색하세요. 샘플의 현재 위치와 납기까지 바로 확인할 수 있습니다.</p></header>
+  <main>
+    <section class="panel">
+      <form class="search" id="searchForm"><input id="query" minlength="2" placeholder="예: 네이비 재킷 검수 / NOVA 울 / A-01" aria-label="샘플 검색어"><button>샘플 찾기</button></form>
+      <p class="hint">기억나는 단어만 띄어 써도 됩니다. 검색어가 없으면 조건별 전체 목록을 봅니다.</p>
+      <div class="stats"><div class="stat"><b id="total">-</b><span>등록된 샘플</span></div><div class="stat"><b id="brands">-</b><span>관리 브랜드</span></div><div class="stat"><b id="working">-</b><span>발송 전 업무</span></div></div>
+      <div class="toolbar"><h2 id="resultTitle">납기 순 샘플 목록</h2><select id="brand"><option value="">모든 브랜드</option></select><select id="status"><option value="">모든 진행 상태</option><option>요청 접수</option><option>샘플 준비</option><option>검수 중</option><option>발송 완료</option></select></div>
+      <div class="cards" id="cards"><div class="empty">데이터를 불러오는 중입니다.</div></div>
+    </section>
+  </main>
+  <footer>합성 데이터로 만든 포트폴리오 데모 · 개발자용 <a href="/docs">API 문서 보기</a></footer>
+  <script>
+    const cards=document.querySelector('#cards'), brand=document.querySelector('#brand'), statusEl=document.querySelector('#status');
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function render(items){cards.innerHTML=items.length?items.map(i=>`<article class="card"><div><div class="brand">${esc(i.brand)} · ${esc(i.season)}</div><div class="title">${esc(i.color)} ${esc(i.category)}</div></div><div><span class="label">소재 / 보관 위치</span>${esc(i.material)} · <b>${esc(i.storage_location)}</b></div><div><span class="label">납기일</span><span class="due">${esc(i.due_date)}</span></div><span class="status">${esc(i.status)}</span></article>`).join(''):'<div class="empty">조건에 맞는 샘플이 없습니다.</div>'}
+    async function loadList(){const p=new URLSearchParams({limit:'120'});if(brand.value)p.set('brand',brand.value);if(statusEl.value)p.set('status',statusEl.value);render(await (await fetch('/api/v1/items?'+p)).json());document.querySelector('#resultTitle').textContent='납기 순 샘플 목록'}
+    async function init(){const [m,items]=await Promise.all([fetch('/api/v1/metrics').then(r=>r.json()),fetch('/api/v1/items?limit=120').then(r=>r.json())]);total.textContent=m.total_items;brands.textContent=m.distinct_brands;working.textContent=m.status_counts.filter(x=>x.status!=='발송 완료').reduce((a,x)=>a+x.count,0);[...new Set(items.map(x=>x.brand))].sort().forEach(x=>brand.add(new Option(x,x)));render(items)}
+    searchForm.addEventListener('submit',async e=>{e.preventDefault();const q=query.value.trim();if(!q)return loadList();const data=await fetch('/api/v1/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,limit:20})}).then(r=>r.json());render(data.results.map(x=>x.item));resultTitle.textContent=`“${q}” 검색 결과 ${data.results.length}건`});
+    brand.addEventListener('change',loadList);statusEl.addEventListener('change',loadList);init().catch(()=>cards.innerHTML='<div class="empty">서버 연결을 확인해 주세요.</div>');
+  </script>
+</body>
+</html>
